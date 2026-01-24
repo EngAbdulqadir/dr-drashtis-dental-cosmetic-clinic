@@ -225,8 +225,9 @@ class SupabaseDB {
 
         // Handle "admin" username alias
         let finalEmail = email;
-        if (email.toLowerCase() === 'admin') {
+        if (email.trim().toLowerCase() === 'admin') {
             finalEmail = 'drashtijani1812@gmail.com';
+            console.log('Mapping "admin" to:', finalEmail); // Debug log
         }
 
         const { data, error } = await this.supabase.auth.signInWithPassword({
