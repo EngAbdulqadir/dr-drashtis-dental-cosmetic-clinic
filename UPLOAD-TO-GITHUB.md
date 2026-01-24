@@ -1,36 +1,28 @@
 # 📦 GitHub Deployment Instructions
 
-## ✅ Deployment Zip Created!
+## ✅ Source Code Updated!
 
-**File**: `dr-drashtis-dental-clinic-DEPLOY-v2.zip`
-**Location**: `C:\Users\hasan\.gemini\antigravity\scratch\dr-drashtis-dental-clinic\`
+The latest code has been pushed directly to your GitHub branch.
 
-> **Updates in v2:**
+> **Key Updates:**
 > - **Fixed Duplicate Bookings**: Added strict server-side checks to prevent double-booking.
 > - **Fixed Forgot Password**: Connected the "Forgot Password" form to Supabase email service.
 > - **Fixed Login/Logout**: Improved authentication, now properly using Supabase Auth.
+> - **UI Update**: Login modal now shows "Username or Email".
 
 ---
 
-## 🚀 How to Deploy to GitHub
+## 🚀 How to View Your Live Site
 
 ### **Step 1: Go to Your Repository**
 Open: https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
 
-### **Step 2: Upload Files**
-1. Click **"Add file"** → **"Upload files"**
-2. **Drag and drop** the zip file OR extract it and drag all files
-3. Add commit message: "Complete dental clinic with Supabase database"
-4. Click **"Commit changes"**
+### **Step 2: Check GitHub Actions**
+1. Your site is configured to deploy automatically via GitHub Pages when you push to `main`.
+2. Wait 1-2 minutes for the deployment to finish.
 
-### **Step 3: Enable GitHub Pages**
-1. Go to **Settings** → **Pages**
-2. Under "Source", select **main** branch
-3. Click **Save**
-4. Wait 1-2 minutes for deployment
-
-### **Step 4: Access Your Live Site**
-Your site will be available at:
+### **Step 3: Access Your Live Site**
+Your site is available at:
 ```
 https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
