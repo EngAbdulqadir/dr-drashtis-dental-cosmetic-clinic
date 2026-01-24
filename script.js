@@ -75,7 +75,11 @@ async function generateTimeSlots() {
         const displayTime = formatTime(hour, minute);
 
         // Check against pre-fetched bookedSlots
-        const isBooked = bookedSlots.includes(timeString);
+        // Robust check: handle if slot matches either exact string or starts with the time
+        // (e.g. "11:00" matches "11:00" or "11:00:00")
+        const isBooked = bookedSlots.some(slot =>
+            slot === timeString || slot.startsWith(timeString)
+        );
 
         if (!isBooked) {
             const option = document.createElement('option');
@@ -119,7 +123,8 @@ async function isSlotAvailable(date, time) {
     try {
         // Get booked slots from Supabase
         const bookedSlots = await window.dbAPI.getBookedTimeSlots(date);
-        return !bookedSlots.includes(time);
+        // Robust check: return TRUE if NO slot matches "time" or "time:00"
+        return !bookedSlots.some(slot => slot === time || slot.startsWith(time));
     } catch (error) {
         console.error('Error checking slot availability:', error);
         // Fallback to localStorage if Supabase fails
