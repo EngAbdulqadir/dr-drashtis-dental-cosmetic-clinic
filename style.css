@@ -1,20 +1,5 @@
 :root {
-    --primary-color: #66BB6A;
-    /* Professional Light Green */
-    --secondary-color: #81C784;
-    /* Soft Green */
-    --accent-color: #E8F5E9;
-    /* Very Light Green Background */
-    --text-color: #2E7D32;
-    /* Dark Green for text */
-    --bg-color: #ffffff;
-    --card-bg: rgba(255, 255, 255, 0.95);
-    --glass-shadow: 0 8px 32px 0 rgba(102, 187, 106, 0.15);
-    --transition-speed: 0.3s;
-}
-
-/* Blue-Green Combination Theme */
-body.blue-green-theme {
+    /* DEFAULT THEME: Teal/Blue-Green (Formerly Second Theme) */
     --primary-color: #26A69A;
     /* Teal/Turquoise */
     --secondary-color: #42A5F5;
@@ -23,7 +8,23 @@ body.blue-green-theme {
     /* Very Light Teal Background */
     --text-color: #00695C;
     /* Dark Teal for text */
+    --bg-color: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.95);
     --glass-shadow: 0 8px 32px 0 rgba(38, 166, 154, 0.15);
+    --transition-speed: 0.3s;
+}
+
+/* ALTERNATE THEME: Professional Blue (Replaces Green) */
+body.blue-theme {
+    --primary-color: #1976D2;
+    /* Professional Blue */
+    --secondary-color: #64B5F6;
+    /* Soft Blue */
+    --accent-color: #E3F2FD;
+    /* Very Light Blue Background */
+    --text-color: #0D47A1;
+    /* Dark Blue for text */
+    --glass-shadow: 0 8px 32px 0 rgba(25, 118, 210, 0.15);
 }
 
 * {

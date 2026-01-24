@@ -2,16 +2,19 @@
 function toggleTheme() {
     const body = document.body;
     const logo = document.querySelector('.logo-section img');
-    const currentTheme = body.classList.contains('blue-green-theme') ? 'blue-green' : 'green';
+    // Default is now Teal (no class). Alternate is Blue ('blue-theme').
+    const isBlueTheme = body.classList.contains('blue-theme');
 
-    if (currentTheme === 'green') {
-        body.classList.add('blue-green-theme');
-        localStorage.setItem('clinicTheme', 'blue-green');
-        if (logo) logo.src = 'logo-blue.png';
+    if (!isBlueTheme) {
+        // Switch to Blue
+        body.classList.add('blue-theme');
+        localStorage.setItem('clinicTheme', 'blue');
+        if (logo) logo.src = 'logo-blue.png'; // Reusing blue logo as it fits better than green
     } else {
-        body.classList.remove('blue-green-theme');
-        localStorage.setItem('clinicTheme', 'green');
-        if (logo) logo.src = 'logo-green.png';
+        // Switch to Default (Teal)
+        body.classList.remove('blue-theme');
+        localStorage.setItem('clinicTheme', 'teal');
+        if (logo) logo.src = 'logo-blue.png'; // Teal also uses blue-ish logo
     }
 }
 
@@ -20,12 +23,13 @@ function loadSavedTheme() {
     const savedTheme = localStorage.getItem('clinicTheme');
     const logo = document.querySelector('.logo-section img');
 
-    if (savedTheme === 'blue-green') {
-        document.body.classList.add('blue-green-theme');
-        if (logo) logo.src = 'logo-blue.png';
-    } else {
-        if (logo) logo.src = 'logo-green.png';
+    // Default is Teal (no class needed)
+    if (savedTheme === 'blue') {
+        document.body.classList.add('blue-theme');
     }
+
+    // Ensure logo matches
+    if (logo) logo.src = 'logo-blue.png';
 }
 
 // Call on page load
