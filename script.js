@@ -478,6 +478,92 @@ function updateChart(appointments) {
     });
 }
 
+/* --- White Label Settings Logic --- */
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadClinicSettings();
+    if (typeof checkSuperAdmin === 'function') checkSuperAdmin();
+});
+
+function checkSuperAdmin() {
+    try {
+        const user = JSON.parse(sessionStorage.getItem('staffUser'));
+        const btn = document.getElementById('settingsBtn');
+        if (user && user.role === 'super_admin' && btn) {
+            btn.style.display = 'inline-block';
+        } else if (btn) {
+            btn.style.display = 'none';
+        }
+    } catch (e) { }
+}
+
+// Global for access from auth.js
+window.checkSuperAdmin = checkSuperAdmin;
+
+window.openSettingsModal = function () {
+    const modal = document.getElementById('settingsModal');
+    const settings = JSON.parse(localStorage.getItem('clinicSettings')) || {};
+
+    document.getElementById('settingClinicName').value = settings.name || "Dr. Drashti's";
+    document.getElementById('settingSubtitle').value = settings.subtitle || "Advanced Dental & Cosmetic Clinic";
+    // Set default colors if not set (using our new Teal default)
+    document.getElementById('settingPrimaryColor').value = settings.primaryColor || "#26A69A";
+    document.getElementById('settingSecondaryColor').value = settings.secondaryColor || "#42A5F5";
+
+    document.getElementById('settingAdminUser').value = settings.adminUser || "drashtijani1812@gmail.com";
+    document.getElementById('settingAdminPass').value = settings.adminPass || "drashti@123";
+
+    modal.style.display = 'flex';
+};
+
+window.closeSettingsModal = function () {
+    document.getElementById('settingsModal').style.display = 'none';
+};
+
+const settingsForm = document.getElementById('settingsForm');
+if (settingsForm) {
+    settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const settings = {
+            name: document.getElementById('settingClinicName').value,
+            subtitle: document.getElementById('settingSubtitle').value,
+            primaryColor: document.getElementById('settingPrimaryColor').value,
+            secondaryColor: document.getElementById('settingSecondaryColor').value,
+            adminUser: document.getElementById('settingAdminUser').value,
+            adminPass: document.getElementById('settingAdminPass').value
+        };
+        localStorage.setItem('clinicSettings', JSON.stringify(settings));
+        applySettings(settings);
+        closeSettingsModal();
+        alert('Settings saved successfully!');
+    });
+}
+
+function loadClinicSettings() {
+    const settings = JSON.parse(localStorage.getItem('clinicSettings'));
+    if (settings) {
+        applySettings(settings);
+    }
+}
+
+function applySettings(settings) {
+    if (settings.name) {
+        const h1 = document.querySelector('.clinic-name h1');
+        if (h1) h1.textContent = settings.name;
+        document.title = settings.name;
+    }
+    if (settings.subtitle) {
+        const span = document.querySelector('.clinic-name span');
+        if (span) span.textContent = settings.subtitle;
+    }
+    if (settings.primaryColor) {
+        document.documentElement.style.setProperty('--primary-color', settings.primaryColor);
+    }
+    if (settings.secondaryColor) {
+        document.documentElement.style.setProperty('--secondary-color', settings.secondaryColor);
+    }
+}
+
 function showSection(sectionId) {
     document.getElementById('dashboard').style.display = 'none';
     document.getElementById('main-content').style.display = 'block';

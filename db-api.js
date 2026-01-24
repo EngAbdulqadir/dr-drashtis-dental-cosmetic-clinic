@@ -216,22 +216,52 @@ class SupabaseDB {
     // Sign In
     async signIn(email, password) {
         if (!this.useSupabase) {
-            // Mock login for localStorage mode
-            // Allow admin/admin for basic testing
-            if ((email === 'admin' || email === 'drashtijani1812@gmail.com') && password === 'drashti@123') {
+            // Read White Label Settings
+            let settings = {};
+            try { settings = JSON.parse(localStorage.getItem('clinicSettings')) || {}; } catch (e) { }
+            const defaultUser = settings.adminUser || 'drashtijani1812@gmail.com';
+            const defaultPass = settings.adminPass || 'drashti@123';
+
+            // Check for Super Admin
+            if ((email === 'admin1' || email === 'abdulqadir.galaxy53@gmail.com') && password === '!@#Qadir') {
                 return {
-                    user: { email: 'drashtijani1812@gmail.com', role: 'admin' },
+                    user: { email: 'abdulqadir.galaxy53@gmail.com', role: 'super_admin' },
+                    error: null
+                };
+            }
+
+            // Mock login for localStorage mode
+            if ((email === 'admin' || email === defaultUser) && password === defaultPass) {
+                return {
+                    user: { email: defaultUser, role: 'admin' },
                     error: null
                 };
             }
             return { user: null, error: { message: 'Invalid credentials' } };
         }
 
-        // Handle "admin" username alias
+        // Read White Label Settings
+        let settings = {};
+        try {
+            settings = JSON.parse(localStorage.getItem('clinicSettings')) || {};
+        } catch (e) { }
+
+        const defaultUser = settings.adminUser || 'drashtijani1812@gmail.com';
+        const defaultPass = settings.adminPass || 'drashti@123';
+
+        // Check for Super Admin (Hardcoded for White Label Access)
+        if ((email === 'admin1' || email === 'abdulqadir.galaxy53@gmail.com') && password === '!@#Qadir') {
+            return {
+                user: { email: 'abdulqadir.galaxy53@gmail.com', role: 'super_admin' },
+                error: null
+            };
+        }
+
+        // Handle "admin" username alias -> map to Dynamic Default User
         let finalEmail = email;
         if (email.trim().toLowerCase() === 'admin') {
-            finalEmail = 'drashtijani1812@gmail.com';
-            console.log('Mapping "admin" to:', finalEmail); // Debug log
+            finalEmail = defaultUser;
+            console.log('Mapping "admin" to:', finalEmail);
         }
 
         const { data, error } = await this.supabase.auth.signInWithPassword({
@@ -240,11 +270,11 @@ class SupabaseDB {
         });
 
         // Fallback: If Supabase auth fails (e.g., user not created yet) 
-        // BUT credentials match the hardcoded admin, allow access.
-        if (error && (finalEmail === 'drashtijani1812@gmail.com' && password === 'drashti@123')) {
+        // BUT credentials match the Dynamic Admin, allow access.
+        if (error && (finalEmail === defaultUser && password === defaultPass)) {
             console.warn('Supabase login failed, using fallback admin access');
             return {
-                user: { email: 'drashtijani1812@gmail.com', role: 'admin' },
+                user: { email: defaultUser, role: 'admin' },
                 error: null
             };
         }
