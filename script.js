@@ -41,49 +41,57 @@ async function generateTimeSlots() {
     const eveningStart = 16; // 4 PM in 24-hour format
     const eveningEnd = 19; // 7 PM in 24-hour format
 
+    // Current time logic to filter past slots
+    const now = new Date();
+    // Use local date string comparison to check if "Today" is selected
+    // Note: selectedDate is YYYY-MM-DD from input[type="date"]
+    // We create a Date object from it at midnight to compare properly or just string compare
+    const isToday = selectedDate === now.toISOString().split('T')[0];
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Helper to check if time is in past for today
+    const isPast = (h, m) => {
+        if (!isToday) return false;
+        if (h < currentHour) return true;
+        if (h === currentHour && m < currentMinute) return true;
+        return false;
+    };
+
+    const addSlot = async (hour, minute) => {
+        // Skip if slot is in the past
+        if (isPast(hour, minute)) return;
+
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayTime = formatTime(hour, minute);
+
+        const available = await isSlotAvailable(selectedDate, timeString);
+        if (available) {
+            const option = document.createElement('option');
+            option.value = timeString;
+            option.textContent = displayTime;
+            timeSelect.appendChild(option);
+        } else {
+            const option = document.createElement('option');
+            option.value = timeString;
+            option.textContent = `${displayTime} (Booked)`;
+            option.disabled = true;
+            option.style.color = '#999';
+            timeSelect.appendChild(option);
+        }
+    };
+
     // Generate morning slots
     for (let hour = morningStart; hour < morningEnd; hour++) {
         for (let minute = 0; minute < 60; minute += slotDuration) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            const displayTime = formatTime(hour, minute);
-
-            const available = await isSlotAvailable(selectedDate, timeString);
-            if (available) {
-                const option = document.createElement('option');
-                option.value = timeString;
-                option.textContent = displayTime;
-                timeSelect.appendChild(option);
-            } else {
-                const option = document.createElement('option');
-                option.value = timeString;
-                option.textContent = `${displayTime} (Booked)`;
-                option.disabled = true;
-                option.style.color = '#999';
-                timeSelect.appendChild(option);
-            }
+            await addSlot(hour, minute);
         }
     }
 
     // Generate evening slots
     for (let hour = eveningStart; hour < eveningEnd; hour++) {
         for (let minute = 0; minute < 60; minute += slotDuration) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            const displayTime = formatTime(hour, minute);
-
-            const available = await isSlotAvailable(selectedDate, timeString);
-            if (available) {
-                const option = document.createElement('option');
-                option.value = timeString;
-                option.textContent = displayTime;
-                timeSelect.appendChild(option);
-            } else {
-                const option = document.createElement('option');
-                option.value = timeString;
-                option.textContent = `${displayTime} (Booked)`;
-                option.disabled = true;
-                option.style.color = '#999';
-                timeSelect.appendChild(option);
-            }
+            await addSlot(hour, minute);
         }
     }
 }
