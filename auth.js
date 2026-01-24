@@ -1,60 +1,147 @@
-// Authentication System
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'drashti@123';
+// Authentication System with Supabase Integration
+// Handles login, logout, and password recovery
 
-// Check if user is logged in
-function checkAuth() {
-    const isLoggedIn = sessionStorage.getItem('staffLoggedIn') === 'true';
-    return isLoggedIn;
-}
-
-// Show login modal
+// Show/hide login modal
 function showLoginModal() {
     document.getElementById('loginModal').style.display = 'flex';
     document.getElementById('loginError').style.display = 'none';
     document.getElementById('loginForm').reset();
 }
 
-// Close login modal
 function closeLoginModal() {
     document.getElementById('loginModal').style.display = 'none';
     document.getElementById('loginError').style.display = 'none';
+}
+
+// Show/hide forgot password modal
+function showForgotPasswordModal() {
+    closeLoginModal();
+    document.getElementById('forgotPasswordModal').style.display = 'flex';
+    document.getElementById('resetMessage').style.display = 'none';
+    document.getElementById('forgotPasswordForm').reset();
+}
+
+function closeForgotPasswordModal() {
+    document.getElementById('forgotPasswordModal').style.display = 'none';
+    document.getElementById('resetMessage').style.display = 'none';
 }
 
 // Handle login form submission
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('loginError');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
 
-            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                // Successful login
-                sessionStorage.setItem('staffLoggedIn', 'true');
-                closeLoginModal();
-                // Show dashboard
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('main-content').style.display = 'none';
-                if (typeof loadAppointments === 'function') {
-                    loadAppointments();
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+            errorMsg.style.display = 'none';
+
+            try {
+                // Use Supabase authentication
+                const { user, error } = await window.dbAPI.signIn(username, password);
+
+                if (error) {
+                    throw error;
                 }
-            } else {
+
+                if (user) {
+                    // Successful login
+                    sessionStorage.setItem('staffLoggedIn', 'true');
+                    sessionStorage.setItem('staffUser', JSON.stringify(user));
+                    closeLoginModal();
+
+                    // Show dashboard
+                    document.getElementById('dashboard').style.display = 'block';
+                    document.getElementById('main-content').style.display = 'none';
+
+                    if (typeof loadAppointments === 'function') {
+                        loadAppointments();
+                    }
+                } else {
+                    throw new Error('Invalid credentials');
+                }
+            } catch (error) {
                 // Failed login
-                errorMsg.textContent = 'Invalid username or password';
+                errorMsg.textContent = error.message || 'Invalid username or password';
                 errorMsg.style.display = 'block';
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        });
+    }
+
+    // Handle forgot password form submission
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('resetEmail').value;
+            const messageEl = document.getElementById('resetMessage');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            messageEl.style.display = 'none';
+
+            try {
+                // Send password reset email via Supabase
+                const { error } = await window.dbAPI.sendPasswordReset(email);
+
+                if (error) {
+                    throw error;
+                }
+
+                // Success
+                messageEl.textContent = 'Password reset link sent! Check your email.';
+                messageEl.style.color = 'green';
+                messageEl.style.display = 'block';
+
+                // Reset form and close modal after 3 seconds
+                setTimeout(() => {
+                    closeForgotPasswordModal();
+                    showLoginModal();
+                }, 3000);
+            } catch (error) {
+                // Error
+                messageEl.textContent = error.message || 'Failed to send reset link. Please try again.';
+                messageEl.style.color = 'red';
+                messageEl.style.display = 'block';
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Reset Link';
             }
         });
     }
 });
 
+// Check if user is logged in
+function checkAuth() {
+    return sessionStorage.getItem('staffLoggedIn') === 'true';
+}
+
 // Logout function
-function logout() {
+async function logout() {
     if (confirm('Are you sure you want to logout?')) {
+        // Sign out from Supabase
+        await window.dbAPI.signOut();
+
+        // Clear session
         sessionStorage.removeItem('staffLoggedIn');
+        sessionStorage.removeItem('staffUser');
+
+        // Update UI
         document.getElementById('dashboard').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         showSection('home');

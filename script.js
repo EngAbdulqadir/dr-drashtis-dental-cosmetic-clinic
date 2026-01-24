@@ -25,7 +25,7 @@ function initializeDateTimePickers() {
 }
 
 // Generate 30-minute time slots: 11 AM - 2 PM and 4 PM - 7 PM
-function generateTimeSlots() {
+async function generateTimeSlots() {
     const timeSelect = document.getElementById('appointmentTime');
     const selectedDate = document.getElementById('appointmentDate').value;
 
@@ -47,7 +47,8 @@ function generateTimeSlots() {
             const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             const displayTime = formatTime(hour, minute);
 
-            if (isSlotAvailable(selectedDate, timeString)) {
+            const available = await isSlotAvailable(selectedDate, timeString);
+            if (available) {
                 const option = document.createElement('option');
                 option.value = timeString;
                 option.textContent = displayTime;
@@ -69,7 +70,8 @@ function generateTimeSlots() {
             const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             const displayTime = formatTime(hour, minute);
 
-            if (isSlotAvailable(selectedDate, timeString)) {
+            const available = await isSlotAvailable(selectedDate, timeString);
+            if (available) {
                 const option = document.createElement('option');
                 option.value = timeString;
                 option.textContent = displayTime;
@@ -93,14 +95,22 @@ function formatTime(hour, minute) {
     return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
 }
 
-// Check if a time slot is available
-function isSlotAvailable(date, time) {
-    const appointments = JSON.parse(localStorage.getItem('dentalAppointments')) || [];
-    return !appointments.some(app =>
-        app.appointmentDate === date &&
-        app.appointmentTime === time &&
-        app.status !== 'Cancelled'
-    );
+// Check if a time slot is available (checks Supabase database)
+async function isSlotAvailable(date, time) {
+    try {
+        // Get booked slots from Supabase
+        const bookedSlots = await window.dbAPI.getBookedTimeSlots(date);
+        return !bookedSlots.includes(time);
+    } catch (error) {
+        console.error('Error checking slot availability:', error);
+        // Fallback to localStorage if Supabase fails
+        const appointments = JSON.parse(localStorage.getItem('dentalAppointments')) || [];
+        return !appointments.some(app =>
+            app.appointmentDate === date &&
+            app.appointmentTime === time &&
+            app.status !== 'Cancelled'
+        );
+    }
 }
 
 const form = document.getElementById('bookingForm');
