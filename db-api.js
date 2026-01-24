@@ -214,17 +214,23 @@ class SupabaseDB {
         if (!this.useSupabase) {
             // Mock login for localStorage mode
             // Allow admin/admin for basic testing
-            if ((email === 'admin' || email === 'admin@clinic.com') && password === 'drashti@123') {
+            if ((email === 'admin' || email === 'drashtijani1812@gmail.com') && password === 'drashti@123') {
                 return {
-                    user: { email: 'admin@clinic.com', role: 'admin' },
+                    user: { email: 'drashtijani1812@gmail.com', role: 'admin' },
                     error: null
                 };
             }
             return { user: null, error: { message: 'Invalid credentials' } };
         }
 
+        // Handle "admin" username alias
+        let finalEmail = email;
+        if (email.toLowerCase() === 'admin') {
+            finalEmail = 'drashtijani1812@gmail.com';
+        }
+
         const { data, error } = await this.supabase.auth.signInWithPassword({
-            email: email,
+            email: finalEmail,
             password: password,
         });
 
