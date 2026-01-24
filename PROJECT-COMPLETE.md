@@ -21,7 +21,7 @@ All features have been implemented and tested locally. Ready for deployment!
 - ✅ Preference saved in localStorage
 
 ### **3. Authentication & Security**
-- ✅ Staff login system (admin / drashti@123)
+- ✅ Staff login system (drashtijani1812@gmail.com / drashti@123)
 - ✅ Session-based authentication
 - ✅ Logout functionality
 - ✅ Protected dashboard access
@@ -134,7 +134,7 @@ Before going live, test these locally:
 3. ✅ Verify: "✅ Connected to Supabase database"
 4. ✅ Book a test appointment
 5. ✅ Check Supabase table for data
-6. ✅ Login to dashboard (admin / drashti@123)
+6. ✅ Login to dashboard (drashtijani1812@gmail.com / drashti@123)
 7. ✅ Update appointment status
 8. ✅ Update fees
 9. ✅ Delete appointment
@@ -175,7 +175,7 @@ dr-drashtis-dental-clinic/
 ## 🔑 **Important Credentials**
 
 ### **Staff Dashboard:**
-- Username: `admin`
+- Username: `admin` or `drashtijani1812@gmail.com`
 - Password: `drashti@123`
 
 ### **Supabase:**
