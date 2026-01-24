@@ -180,6 +180,78 @@ class SupabaseDB {
             return true;
         }
     }
+
+    // Get booked time slots for a specific date
+    async getBookedTimeSlots(date) {
+        if (!this.useSupabase) {
+            const appointments = JSON.parse(localStorage.getItem('dentalAppointments')) || [];
+            return appointments
+                .filter(app => app.appointmentDate === date && app.status !== 'Cancelled')
+                .map(app => app.appointmentTime);
+        }
+
+        try {
+            const { data, error } = await this.supabase
+                .from('appointments')
+                .select('appointment_time')
+                .eq('appointment_date', date)
+                .neq('status', 'Cancelled');
+
+            if (error) throw error;
+
+            return data.map(item => item.appointment_time);
+        } catch (error) {
+            console.error('Supabase error:', error);
+            const appointments = JSON.parse(localStorage.getItem('dentalAppointments')) || [];
+            return appointments
+                .filter(app => app.appointmentDate === date && app.status !== 'Cancelled')
+                .map(app => app.appointmentTime);
+        }
+    }
+
+    // Sign In
+    async signIn(email, password) {
+        if (!this.useSupabase) {
+            // Mock login for localStorage mode
+            // Allow admin/admin for basic testing
+            if ((email === 'admin' || email === 'admin@clinic.com') && password === 'admin') {
+                return {
+                    user: { email: 'admin@clinic.com', role: 'admin' },
+                    error: null
+                };
+            }
+            return { user: null, error: { message: 'Invalid credentials' } };
+        }
+
+        const { data, error } = await this.supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        return { user: data.user, error };
+    }
+
+    // Sign Out
+    async signOut() {
+        if (!this.useSupabase) {
+            return { error: null };
+        }
+        const { error } = await this.supabase.auth.signOut();
+        return { error };
+    }
+
+    // Send Password Reset Email
+    async sendPasswordReset(email) {
+        if (!this.useSupabase) {
+            return { error: { message: 'Password reset not available in offline mode' } };
+        }
+
+        const { data, error } = await this.supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin,
+        });
+
+        return { data, error };
+    }
 }
 
 // Export singleton instance

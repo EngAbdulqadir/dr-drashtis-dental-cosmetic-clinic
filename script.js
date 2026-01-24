@@ -115,7 +115,7 @@ async function isSlotAvailable(date, time) {
 
 const form = document.getElementById('bookingForm');
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const name = document.getElementById('name').value;
@@ -126,7 +126,8 @@ form.addEventListener('submit', (e) => {
     const reason = document.getElementById('reason').value;
 
     // Double-check slot availability
-    if (!isSlotAvailable(appointmentDate, appointmentTime)) {
+    const available = await isSlotAvailable(appointmentDate, appointmentTime);
+    if (!available) {
         alert('Sorry, this time slot has just been booked. Please select another time.');
         generateTimeSlots(); // Refresh slots
         return;
@@ -146,12 +147,14 @@ form.addEventListener('submit', (e) => {
         status: 'Pending'
     };
 
-    saveAppointment(appointment);
-    form.reset();
-    initializeDateTimePickers(); // Reset date/time pickers
+    const success = await saveAppointment(appointment);
 
-    // Show Modal instead of alert
-    showBookingModal(appointment);
+    if (success) {
+        form.reset();
+        initializeDateTimePickers(); // Reset date/time pickers
+        // Show Modal instead of alert
+        showBookingModal(appointment);
+    }
 });
 
 function showBookingModal(appointment) {
@@ -194,9 +197,11 @@ async function saveAppointment(appointment) {
     try {
         await window.dbAPI.createAppointment(appointment);
         await loadAppointments();
+        return true;
     } catch (error) {
         console.error('Error saving appointment:', error);
         alert('Failed to save appointment. Please try again.');
+        return false;
     }
 }
 

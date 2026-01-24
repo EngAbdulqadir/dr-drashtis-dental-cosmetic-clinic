@@ -2,8 +2,13 @@
 
 ## ✅ Deployment Zip Created!
 
-**File**: `dr-drashtis-dental-clinic-DEPLOY.zip`
+**File**: `dr-drashtis-dental-clinic-DEPLOY-v2.zip`
 **Location**: `C:\Users\hasan\.gemini\antigravity\scratch\dr-drashtis-dental-clinic\`
+
+> **Updates in v2:**
+> - **Fixed Duplicate Bookings**: Added strict server-side checks to prevent double-booking.
+> - **Fixed Forgot Password**: Connected the "Forgot Password" form to Supabase email service.
+> - **Fixed Login/Logout**: Improved authentication, now properly using Supabase Auth.
 
 ---
 
