@@ -522,7 +522,7 @@ window.closeSettingsModal = function () {
 
 const settingsForm = document.getElementById('settingsForm');
 if (settingsForm) {
-    settingsForm.addEventListener('submit', (e) => {
+    settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const settings = {
             name: document.getElementById('settingClinicName').value,
@@ -532,17 +532,54 @@ if (settingsForm) {
             adminUser: document.getElementById('settingAdminUser').value,
             adminPass: document.getElementById('settingAdminPass').value
         };
-        localStorage.setItem('clinicSettings', JSON.stringify(settings));
+
         applySettings(settings);
+
+        // Save to Cloud (and local inside the method)
+        const btn = settingsForm.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        await window.dbAPI.saveSettings(settings);
+
+        btn.textContent = originalText;
+        btn.disabled = false;
+
         closeSettingsModal();
         alert('Settings saved successfully!');
     });
 }
 
-function loadClinicSettings() {
-    const settings = JSON.parse(localStorage.getItem('clinicSettings'));
-    if (settings) {
-        applySettings(settings);
+async function loadClinicSettings() {
+    try {
+        let settings = {};
+        // Try to fetch from Supabase if connected
+        if (window.dbAPI) {
+            const data = await window.dbAPI.getSettings();
+            // If data comes from DB (snake_case), map it
+            if (data && data.clinic_name) {
+                settings = {
+                    name: data.clinic_name,
+                    subtitle: data.subtitle,
+                    primaryColor: data.primary_color,
+                    secondaryColor: data.secondary_color,
+                    adminUser: data.admin_user,
+                    adminPass: data.admin_pass
+                };
+                // Cache locally
+                localStorage.setItem('clinicSettings', JSON.stringify(settings));
+            } else if (data && data.name) {
+                // From local storage fallback
+                settings = data;
+            }
+        } else {
+            settings = JSON.parse(localStorage.getItem('clinicSettings'));
+        }
+
+        if (settings && Object.keys(settings).length > 0) applySettings(settings);
+    } catch (e) {
+        console.error("Error loading settings:", e);
     }
 }
 

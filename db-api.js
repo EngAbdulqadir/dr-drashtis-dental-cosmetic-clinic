@@ -303,6 +303,73 @@ class SupabaseDB {
 
         return { data, error };
     }
+
+    // Get App Settings
+    async getSettings() {
+        if (!this.useSupabase) {
+            return JSON.parse(localStorage.getItem('clinicSettings')) || {};
+        }
+        try {
+            const { data, error } = await this.supabase
+                .from('settings')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching settings (using local fallback):', error);
+            return JSON.parse(localStorage.getItem('clinicSettings')) || {};
+        }
+    }
+
+    // Save App Settings
+    async saveSettings(settings) {
+        // Always save to local for offline backup/speed
+        localStorage.setItem('clinicSettings', JSON.stringify(settings));
+
+        if (!this.useSupabase) return true;
+
+        try {
+            // Check if row exists
+            const { data: existing } = await this.supabase.from('settings').select('id').limit(1).single();
+
+            if (existing) {
+                // Update
+                const { error } = await this.supabase
+                    .from('settings')
+                    .update({
+                        clinic_name: settings.name,
+                        subtitle: settings.subtitle,
+                        primary_color: settings.primaryColor,
+                        secondary_color: settings.secondaryColor,
+                        admin_user: settings.adminUser,
+                        admin_pass: settings.adminPass
+                    })
+                    .eq('id', existing.id);
+                if (error) throw error;
+            } else {
+                // Insert first row
+                const { error } = await this.supabase
+                    .from('settings')
+                    .insert([{
+                        clinic_name: settings.name,
+                        subtitle: settings.subtitle,
+                        primary_color: settings.primaryColor,
+                        secondary_color: settings.secondaryColor,
+                        admin_user: settings.adminUser,
+                        admin_pass: settings.adminPass
+                    }]);
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            console.error('Error saving settings to Supabase:', error);
+            alert('Saved locally, but failed to sync to cloud. (Check if "settings" table exists within Supabase)');
+            return false;
+        }
+    }
 }
 
 // Export singleton instance
