@@ -214,7 +214,7 @@ class SupabaseDB {
         if (!this.useSupabase) {
             // Mock login for localStorage mode
             // Allow admin/admin for basic testing
-            if ((email === 'admin' || email === 'admin@clinic.com') && password === 'admin') {
+            if ((email === 'admin' || email === 'admin@clinic.com') && password === 'drashti@123') {
                 return {
                     user: { email: 'admin@clinic.com', role: 'admin' },
                     error: null
