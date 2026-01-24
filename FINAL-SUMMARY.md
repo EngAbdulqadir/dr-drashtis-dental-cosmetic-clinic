@@ -95,7 +95,7 @@ dr-drashtis-dental-clinic/
 1. Create GitHub repository
 2. Push code: `git push origin main`
 3. Enable GitHub Pages in Settings
-4. Live at: `https://YOUR_USERNAME.github.io/dr-drashtis-dental-clinic/`
+4. Live at: `https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/`
 
 ### Option 2: Netlify
 1. Drag and drop project folder to Netlify

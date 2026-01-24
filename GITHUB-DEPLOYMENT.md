@@ -23,7 +23,7 @@ git commit -m "Initial commit: Dr. Drashti's Dental Clinic"
 ### Step 3: Push to GitHub
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/dr-drashtis-dental-clinic.git
+git remote add origin https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic.git
 git branch -M main
 git push -u origin main
 ```
@@ -41,7 +41,7 @@ git push -u origin main
 
 Your site will be available at:
 ```
-https://YOUR_USERNAME.github.io/dr-drashtis-dental-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 ---

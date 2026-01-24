@@ -58,7 +58,7 @@ Run these commands in your terminal:
 cd C:\Users\hasan\.gemini\antigravity\scratch\dr-drashtis-dental-clinic
 
 # Add GitHub as remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/dr-drashtis-dental-clinic.git
+git remote add origin https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic.git
 
 # Push to GitHub
 git branch -M main
@@ -76,7 +76,7 @@ git push -u origin main
 ### D. Get Your Live URL
 Your site will be at:
 ```
-https://YOUR_USERNAME.github.io/dr-drashtis-dental-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 ---

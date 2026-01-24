@@ -87,7 +87,7 @@ C:\Users\hasan\.gemini\antigravity\scratch\dr-drashtis-dental-clinic\
 
 You already have the repository created at:
 ```
-https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
+https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic
 ```
 
 Try pushing again when network is stable:
@@ -106,7 +106,7 @@ git push -u origin main
 ```
 
 **Alternative: Upload Manually**
-1. Go to: https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
+1. Go to: https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic
 2. Click "uploading an existing file"
 3. Drag and drop all files from your project folder
 4. Commit the changes
@@ -119,7 +119,7 @@ git push -u origin main
 
 ### **Step 4: Your Live URL**
 ```
-https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 ---
@@ -295,12 +295,12 @@ c0a34b9 - Initial commit: Dr. Drashti's Dental Clinic
 
 **Live URL (after deployment)**:
 ```
-https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 **Repository**:
 ```
-https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
+https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic
 ```
 
 **Supabase Dashboard**:

@@ -15,7 +15,7 @@ The latest code has been pushed directly to your GitHub branch.
 ## 🚀 How to View Your Live Site
 
 ### **Step 1: Go to Your Repository**
-Open: https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
+Open: https://github.com/engaqk/dr-drashtis-dental-cosmetic-clinic
 
 ### **Step 2: Check GitHub Actions**
 1. Your site is configured to deploy automatically via GitHub Pages when you push to `main`.
@@ -24,7 +24,7 @@ Open: https://github.com/EngAbdulqadir/dr-drashtis-dental-cosmetic-clinic
 ### **Step 3: Access Your Live Site**
 Your site is available at:
 ```
-https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 ---
@@ -115,7 +115,7 @@ https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
 
 **Your Live URL:**
 ```
-https://engabdulqadir.github.io/dr-drashtis-dental-cosmetic-clinic/
+https://engaqk.github.io/dr-drashtis-dental-cosmetic-clinic/
 ```
 
 ---
