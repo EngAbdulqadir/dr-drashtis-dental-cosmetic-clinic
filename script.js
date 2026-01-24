@@ -29,7 +29,19 @@ async function generateTimeSlots() {
     const timeSelect = document.getElementById('appointmentTime');
     const selectedDate = document.getElementById('appointmentDate').value;
 
+    timeSelect.innerHTML = '<option value="">Loading slots...</option>';
+    timeSelect.disabled = true;
+
+    // Fetch booked slots ONCE for the entire day
+    let bookedSlots = [];
+    try {
+        bookedSlots = await window.dbAPI.getBookedTimeSlots(selectedDate);
+    } catch (e) {
+        console.error("Failed to load booked slots", e);
+    }
+
     timeSelect.innerHTML = '<option value="">Select time slot...</option>';
+    timeSelect.disabled = false;
 
     const slotDuration = 30; // minutes
 
@@ -43,9 +55,6 @@ async function generateTimeSlots() {
 
     // Current time logic to filter past slots
     const now = new Date();
-    // Use local date string comparison to check if "Today" is selected
-    // Note: selectedDate is YYYY-MM-DD from input[type="date"]
-    // We create a Date object from it at midnight to compare properly or just string compare
     const isToday = selectedDate === now.toISOString().split('T')[0];
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
@@ -58,15 +67,17 @@ async function generateTimeSlots() {
         return false;
     };
 
-    const addSlot = async (hour, minute) => {
+    const addSlot = (hour, minute) => {
         // Skip if slot is in the past
         if (isPast(hour, minute)) return;
 
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const displayTime = formatTime(hour, minute);
 
-        const available = await isSlotAvailable(selectedDate, timeString);
-        if (available) {
+        // Check against pre-fetched bookedSlots
+        const isBooked = bookedSlots.includes(timeString);
+
+        if (!isBooked) {
             const option = document.createElement('option');
             option.value = timeString;
             option.textContent = displayTime;
@@ -84,14 +95,14 @@ async function generateTimeSlots() {
     // Generate morning slots
     for (let hour = morningStart; hour < morningEnd; hour++) {
         for (let minute = 0; minute < 60; minute += slotDuration) {
-            await addSlot(hour, minute);
+            addSlot(hour, minute);
         }
     }
 
     // Generate evening slots
     for (let hour = eveningStart; hour < eveningEnd; hour++) {
         for (let minute = 0; minute < 60; minute += slotDuration) {
-            await addSlot(hour, minute);
+            addSlot(hour, minute);
         }
     }
 }

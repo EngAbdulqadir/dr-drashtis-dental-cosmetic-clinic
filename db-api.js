@@ -199,7 +199,11 @@ class SupabaseDB {
 
             if (error) throw error;
 
-            return data.map(item => item.appointment_time);
+            return data.map(item => {
+                // Supabase (Postgres) returns TIME as HH:MM:SS
+                // We only want HH:MM
+                return item.appointment_time ? item.appointment_time.substring(0, 5) : null;
+            }).filter(Boolean);
         } catch (error) {
             console.error('Supabase error:', error);
             const appointments = JSON.parse(localStorage.getItem('dentalAppointments')) || [];
