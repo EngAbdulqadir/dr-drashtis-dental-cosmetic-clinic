@@ -588,6 +588,10 @@ function applySettings(settings) {
         const h1 = document.querySelector('.clinic-name h1');
         if (h1) h1.textContent = settings.name;
         document.title = settings.name;
+        const footerP = document.getElementById('footerCopyright');
+        if (footerP) {
+            footerP.innerHTML = `&copy; 2026 ${settings.name}, Dahod. All rights reserved.`;
+        }
     }
     if (settings.subtitle) {
         const span = document.querySelector('.clinic-name span');
