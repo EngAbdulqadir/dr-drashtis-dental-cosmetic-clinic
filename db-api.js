@@ -235,6 +235,16 @@ class SupabaseDB {
             password: password,
         });
 
+        // Fallback: If Supabase auth fails (e.g., user not created yet) 
+        // BUT credentials match the hardcoded admin, allow access.
+        if (error && (finalEmail === 'drashtijani1812@gmail.com' && password === 'drashti@123')) {
+            console.warn('Supabase login failed, using fallback admin access');
+            return {
+                user: { email: 'drashtijani1812@gmail.com', role: 'admin' },
+                error: null
+            };
+        }
+
         return { user: data.user, error };
     }
 
