@@ -1,7 +1,6 @@
 let myChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadAppointments();
     initializeDateTimePickers();
 });
 
