@@ -10,7 +10,8 @@ class DentalDB {
     // Get all appointments
     async getAppointments() {
         try {
-            const snapshot = await this.db.collection('appointments').orderBy('id', 'desc').get();
+            // Revert orderBy to avoid silent index failures on brand new databases
+            const snapshot = await this.db.collection('appointments').get();
             const appointments = [];
             snapshot.forEach((doc) => {
                 appointments.push({
@@ -21,21 +22,7 @@ class DentalDB {
             return appointments;
         } catch (error) {
             console.error('Firestore Error (getAppointments):', error);
-            // If it fails (e.g., missing index), fallback to unordered lookup
-            try {
-                const snapshot = await this.db.collection('appointments').get();
-                const appointments = [];
-                snapshot.forEach((doc) => {
-                    appointments.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                return appointments;
-            } catch (fallbackError) {
-                console.error('Firestore Error (Fallback getAppointments):', fallbackError);
-                return [];
-            }
+            return [];
         }
     }
 
