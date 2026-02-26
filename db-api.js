@@ -91,6 +91,66 @@ class DentalDB {
             return false;
         }
     }
+
+    // Get Booked Time Slots for a specific date
+    async getBookedTimeSlots(dateStr) {
+        try {
+            const snapshot = await this.db.collection('appointments')
+                .where('appointmentDate', '==', dateStr)
+                .where('status', '!=', 'Cancelled')
+                .get();
+
+            const bookedSlots = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.appointmentTime) {
+                    bookedSlots.push(data.appointmentTime);
+                }
+            });
+            return bookedSlots;
+        } catch (error) {
+            console.error('Firestore Error (getBookedTimeSlots):', error);
+            // Fallback: get all and filter locally if compound query index is missing
+            try {
+                const snapshot = await this.db.collection('appointments').get();
+                const bookedSlots = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.appointmentDate === dateStr && data.status !== 'Cancelled' && data.appointmentTime) {
+                        bookedSlots.push(data.appointmentTime);
+                    }
+                });
+                return bookedSlots;
+            } catch (fallbackError) {
+                return [];
+            }
+        }
+    }
+
+    // Get White Label Settings
+    async getSettings() {
+        try {
+            const doc = await this.db.collection('settings').doc('clinic').get();
+            if (doc.exists) {
+                return doc.data();
+            }
+            return null;
+        } catch (error) {
+            console.error('Firestore Error (getSettings):', error);
+            return null;
+        }
+    }
+
+    // Save White Label Settings
+    async saveSettings(settingsData) {
+        try {
+            await this.db.collection('settings').doc('clinic').set(settingsData, { merge: true });
+            return true;
+        } catch (error) {
+            console.error('Firestore Error (saveSettings):', error);
+            return false;
+        }
+    }
 }
 
 // Export singleton instance
