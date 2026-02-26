@@ -53,7 +53,7 @@ class DentalDB {
             };
         } catch (error) {
             console.error('Firestore Error (createAppointment):', error);
-            return appointment;
+            throw error;
         }
     }
 
