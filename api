@@ -1,0 +1,141 @@
+<?php
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+require_once 'db_config.php';
+
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Get JSON input
+$input = json_decode(file_get_contents('php://input'), true);
+
+switch ($method) {
+    case 'GET':
+        getAppointments($pdo);
+        break;
+    case 'POST':
+        createAppointment($pdo, $input);
+        break;
+    case 'PUT':
+        updateAppointment($pdo, $input);
+        break;
+    case 'DELETE':
+        deleteAppointment($pdo, $input); # Usually ID is passed in query or body
+        break;
+    default:
+        echo json_encode(['error' => 'Invalid request method']);
+        break;
+}
+
+function getAppointments($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM appointments ORDER BY created_at DESC");
+        $appointments = $stmt->fetchAll();
+        
+        // Transform keys if necessary to match frontend expectations, or frontend adapts.
+        // Frontend expects snake_case from Supabase, so we keep it or map it.
+        // Supabase returned: id, booking_date, appointment_date, appointment_time, name, place, mobile, reason, fee, status
+        // Our SQL columns match these names exactly.
+        
+        echo json_encode($appointments);
+    } catch (PDOException $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+}
+
+function createAppointment($pdo, $data) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO appointments 
+            (name, place, mobile, appointment_date, appointment_time, reason, fee, status, booking_date) 
+            VALUES (:name, :place, :mobile, :appointment_date, :appointment_time, :reason, :fee, :status, :booking_date)
+            RETURNING *");
+        
+        $stmt->execute([
+            ':name' => $data['name'],
+            ':place' => $data['place'] ?? '',
+            ':mobile' => $data['mobile'],
+            ':appointment_date' => $data['appointment_date'],
+            ':appointment_time' => $data['appointment_time'],
+            ':reason' => $data['reason'] ?? '',
+            ':fee' => $data['fee'] ?? 0,
+            ':status' => $data['status'] ?? 'Pending',
+            ':booking_date' => $data['booking_date'] ?? date('Y-m-d')
+        ]);
+        
+        $newAppointment = $stmt->fetch();
+        
+        echo json_encode(['data' => $newAppointment]);
+    } catch (PDOException $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+}
+
+function updateAppointment($pdo, $data) {
+    if (!isset($data['id'])) {
+        echo json_encode(['error' => 'ID is required']);
+        return;
+    }
+    
+    try {
+        // Construct query dynamically or just update specific fields
+        // In the frontend, we usually update status and fee.
+        
+        $fields = [];
+        $params = [];
+        
+        if (isset($data['status'])) {
+            $fields[] = "status = ?";
+            $params[] = $data['status'];
+        }
+        if (isset($data['fee'])) {
+            $fields[] = "fee = ?";
+            $params[] = $data['fee'];
+        }
+        
+        if (empty($fields)) {
+            echo json_encode(['error' => 'No fields to update']);
+            return;
+        }
+        
+        $params[] = $data['id']; // For WHERE clause
+        
+        $sql = "UPDATE appointments SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        // Return updated record
+        $stmt = $pdo->prepare("SELECT * FROM appointments WHERE id = ?");
+        $stmt->execute([$data['id']]);
+        $updated = $stmt->fetch();
+        
+        echo json_encode(['data' => $updated]);
+        
+    } catch (PDOException $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+}
+
+function deleteAppointment($pdo, $data) {
+    // ID might be in query string for DELETE requests sometimes, but we check body first or $_GET
+    $id = $data['id'] ?? $_GET['id'] ?? null;
+    
+    if (!$id) {
+        echo json_encode(['error' => 'ID is required']);
+        return;
+    }
+    
+    try {
+        $stmt = $pdo->prepare("DELETE FROM appointments WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+}
+?>
