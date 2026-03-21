@@ -2,7 +2,7 @@
   "name": "Dr. Drashti's Dental & Cosmetic Clinic",
   "short_name": "Clinic Dashboard",
   "description": "Professional patient management and SMS broadcast suite for staff and patients.",
-  "start_url": "/?pwa=true",
+  "start_url": "index.html?pwa=true",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#006b5d",
