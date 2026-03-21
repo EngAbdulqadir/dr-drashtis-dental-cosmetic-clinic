@@ -11,7 +11,14 @@ class BroadcastSystem {
     }
 
     bindEvents() {
-        // We'll call this once DOM is ready or after adding HTML
+        // Handle file name display for excel
+        document.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'excelUpload') {
+                const fileName = e.target.files[0]?.name || '';
+                const display = document.getElementById('excelFileName');
+                if (display) display.innerText = fileName ? `Selected: ${fileName}` : '';
+            }
+        });
     }
 
     // Toggle between tabs (Patient Records vs Broadcast)
@@ -35,13 +42,18 @@ class BroadcastSystem {
         if (statsEl) statsEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing contacts...';
 
         // 1. Fetch from Firestore (via dbAPI)
-        const discovered = await window.dbAPI.discoverRecipients();
-        
-        // Clear all except manual/excel entries? Or just merge?
-        // Let's assume Discovery is the BASE list.
-        this.recipients.clear();
-        discovered.forEach(r => this.recipients.set(r.phone, r));
+        try {
+            const discovered = await window.dbAPI.discoverRecipients();
+            
+            // Clear all except manual/excel entries? Or just merge?
+            // Let's assume Discovery is the BASE list.
+            this.recipients.clear();
+            discovered.forEach(r => this.recipients.set(r.phone, r));
+        } catch (e) {
+            console.error('Discovery Error:', e);
+        }
 
+        if (statsEl) statsEl.innerHTML = '<i class="fas fa-users-cog"></i> Discovery: ';
         this.updateRecipientCountDisplay();
     }
 
@@ -138,8 +150,8 @@ class BroadcastSystem {
         if (this.isSending) return;
         
         const message = document.getElementById('broadcastMessage').value.trim();
-        const apiKey = '0e257007-8820-4131-ab85-06fb76c02450'; // Textbee.dev Public API Key (example) OR ask user
-        const deviceId = '67d9346f04746f387db053f2'; // Textbee.dev Device ID (example)
+        const apiKey = localStorage.getItem('sms_api_key') || '0e257007-8820-4131-ab85-06fb76c02450';
+        const deviceId = localStorage.getItem('sms_device_id') || '67d9346f04746f387db053f2';
         
         if (!message) {
             alert('Please enter a message.');
@@ -213,15 +225,15 @@ class BroadcastSystem {
             
             await window.dbAPI.saveBroadcastReport(auditData);
             
-            alert('Broadcast completed successfully! Check the history for details.');
+            alert(`Broadcast completed! \nTotal Sent: ${results.filter(r => r.success).length}/${results.length} batches.`);
             document.getElementById('broadcastMessage').value = '';
             this.loadHistory();
         } catch (error) {
             console.error('Core Broadcast Error:', error);
-            alert('A critical error occurred while sending the broadcast.');
+            alert('A critical error occurred while sending the broadcast: ' + error.message);
         } finally {
             this.setSendingState(false);
-            progressEl.innerHTML = '';
+            if (progressEl) progressEl.innerHTML = '';
         }
     }
 
@@ -238,28 +250,58 @@ class BroadcastSystem {
         const historyList = document.getElementById('broadcastHistoryList');
         if (!historyList) return;
 
-        historyList.innerHTML = 'Loading history...';
-        const history = await window.dbAPI.getBroadcastHistory();
+        historyList.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-circle-notch fa-spin"></i> Loading history...</div>';
+        
+        try {
+            const history = await window.dbAPI.getBroadcastHistory();
 
-        if (history.length === 0) {
-            historyList.innerHTML = '<div style="text-align: center; color: #888;">No broadcast history found.</div>';
-            return;
-        }
+            if (!history || history.length === 0) {
+                historyList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No broadcast records found.</div>';
+                return;
+            }
 
-        historyList.innerHTML = history.map(item => `
-            <div class="history-item">
-                <div class="history-header">
-                    <strong>${item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString() : 'Just now'}</strong>
-                    <span class="badge">${item.recipientsCount} recipients</span>
-                </div>
-                <div class="history-body">
-                    <p>${item.message}</p>
-                    <div class="history-status">
-                        ${item.status.join(', ')}
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item">
+                    <div class="history-header">
+                        <div>
+                            <strong>${item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString() : 'Just now'}</strong>
+                            <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">"${item.message.substring(0, 60)}${item.message.length > 60 ? '...' : ''}"</div>
+                        </div>
+                        <span class="badge">${item.recipientsCount} recipients</span>
+                    </div>
+                    <div class="history-body">
+                        <div class="history-status">
+                            ${Array.isArray(item.status) ? item.status.join(' | ') : 'Sent'}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        } catch (err) {
+            console.error('History Load Error:', err);
+            historyList.innerHTML = '<div style="color: red; text-align: center;">Failed to load history trace.</div>';
+        }
+    }
+
+    // SMS Gateway Settings
+    openSmsSettings() {
+        const modal = document.getElementById('smsSettingsModal');
+        if (modal) {
+            document.getElementById('smsApiKey').value = localStorage.getItem('sms_api_key') || '';
+            document.getElementById('smsDeviceId').value = localStorage.getItem('sms_device_id') || '';
+            modal.style.display = 'flex';
+        }
+    }
+
+    saveSmsSettings(e) {
+        e.preventDefault();
+        const apiKey = document.getElementById('smsApiKey').value.trim();
+        const deviceId = document.getElementById('smsDeviceId').value.trim();
+        
+        localStorage.setItem('sms_api_key', apiKey);
+        localStorage.setItem('sms_device_id', deviceId);
+        
+        document.getElementById('smsSettingsModal').style.display = 'none';
+        alert('SMS Settings Saved Locally!');
     }
 }
 

@@ -145,18 +145,22 @@ class DentalDB {
     // Get SMS Broadcast History
     async getBroadcastHistory() {
         try {
+            // Remove orderBy to avoid silent index failures; sort in memory
             const snapshot = await this.db.collection('sms_broadcasts')
-                .orderBy('createdAt', 'desc')
-                .limit(10)
+                .limit(20)
                 .get();
             const history = [];
             snapshot.forEach(doc => {
                 history.push({ id: doc.id, ...doc.data() });
             });
-            return history;
+            // Sort client-side by createdAt desc
+            return history.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                return dateB - dateA;
+            });
         } catch (error) {
             console.error('Firestore Error (getBroadcastHistory):', error);
-            // Fallback for missing index or collection
             return [];
         }
     }
