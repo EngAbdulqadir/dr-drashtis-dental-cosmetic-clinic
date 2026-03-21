@@ -150,8 +150,17 @@ class BroadcastSystem {
         if (this.isSending) return;
         
         const message = document.getElementById('broadcastMessage').value.trim();
-        const apiKey = localStorage.getItem('sms_api_key') || '0e257007-8820-4131-ab85-06fb76c02450';
-        const deviceId = localStorage.getItem('sms_device_id') || '67d9346f04746f387db053f2';
+        
+        // Fetch centralized credentials from Firestore on every send for security/sync
+        const settings = await window.dbAPI.getGatewaySettings();
+        const apiKey = settings.api_key;
+        const deviceId = settings.device_id;
+        
+        if (!apiKey || !deviceId) {
+            alert('SMS Gateway is not configured. Please use "Gateway Settings" to set your API Key and Device ID.');
+            this.openSmsSettings();
+            return;
+        }
         
         if (!message) {
             alert('Please enter a message.');
@@ -283,25 +292,32 @@ class BroadcastSystem {
     }
 
     // SMS Gateway Settings
-    openSmsSettings() {
+    async openSmsSettings() {
         const modal = document.getElementById('smsSettingsModal');
         if (modal) {
-            document.getElementById('smsApiKey').value = localStorage.getItem('sms_api_key') || '';
-            document.getElementById('smsDeviceId').value = localStorage.getItem('sms_device_id') || '';
+            const settings = await window.dbAPI.getGatewaySettings();
+            document.getElementById('smsApiKey').value = settings.api_key || '';
+            document.getElementById('smsDeviceId').value = settings.device_id || '';
             modal.style.display = 'flex';
         }
     }
 
-    saveSmsSettings(e) {
+    async saveSmsSettings(e) {
         e.preventDefault();
         const apiKey = document.getElementById('smsApiKey').value.trim();
         const deviceId = document.getElementById('smsDeviceId').value.trim();
         
-        localStorage.setItem('sms_api_key', apiKey);
-        localStorage.setItem('sms_device_id', deviceId);
+        const success = await window.dbAPI.saveGatewaySettings({
+            api_key: apiKey,
+            device_id: deviceId
+        });
         
-        document.getElementById('smsSettingsModal').style.display = 'none';
-        alert('SMS Settings Saved Locally!');
+        if (success) {
+            document.getElementById('smsSettingsModal').style.display = 'none';
+            alert('SMS Gateway Configuration Saved to Firestore!');
+        } else {
+            alert('Failed to save settings. Check permissions.');
+        }
     }
 }
 

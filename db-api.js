@@ -128,6 +128,39 @@ class DentalDB {
         }
     }
 
+    // Save White Label Settings
+    async saveSettings(settingsData) {
+        try {
+            await this.db.collection('settings').doc('clinic').set(settingsData, { merge: true });
+            return true;
+        } catch (error) {
+            console.error('Firestore Error (saveSettings):', error);
+            return false;
+        }
+    }
+
+    // NEW: Get SMS Gateway Secrets
+    async getGatewaySettings() {
+        try {
+            const doc = await this.db.collection('settings').doc('gateway').get();
+            return doc.exists ? doc.data() : {};
+        } catch (error) {
+            console.error('Firestore Error (getGatewaySettings):', error);
+            return {};
+        }
+    }
+
+    // NEW: Save SMS Gateway Secrets
+    async saveGatewaySettings(data) {
+        try {
+            await this.db.collection('settings').doc('gateway').set(data, { merge: true });
+            return true;
+        } catch (error) {
+            console.error('Firestore Error (saveGatewaySettings):', error);
+            return false;
+        }
+    }
+
     // Save SMS Broadcast Report
     async saveBroadcastReport(report) {
         try {
