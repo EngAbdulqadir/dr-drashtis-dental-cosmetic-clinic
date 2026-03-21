@@ -153,13 +153,13 @@ class BroadcastSystem {
         
         // Fetch centralized credentials from Firestore on every send for security/sync
         const settings = await window.dbAPI.getGatewaySettings();
-        const apiKey = settings.api_key;
-        const deviceId = settings.device_id;
+        const apiKey = settings.api_key || '0e257007-8820-4131-ab85-06fb76c02450';
+        const deviceId = settings.device_id || '67d9346f04746f387db053f2';
         
-        if (!apiKey || !deviceId) {
-            alert('SMS Gateway is not configured. Please use "Gateway Settings" to set your API Key and Device ID.');
-            this.openSmsSettings();
-            return;
+        if (!settings.api_key || !settings.device_id) {
+            console.log('Using default gateway credentials...');
+            // We'll proceed with defaults if explicitly configured not to be empty, 
+            // but for security it's best if they are always in Firestore.
         }
         
         if (!message) {
@@ -296,8 +296,9 @@ class BroadcastSystem {
         const modal = document.getElementById('smsSettingsModal');
         if (modal) {
             const settings = await window.dbAPI.getGatewaySettings();
-            document.getElementById('smsApiKey').value = settings.api_key || '';
-            document.getElementById('smsDeviceId').value = settings.device_id || '';
+            // Pre-fill with existing or default values
+            document.getElementById('smsApiKey').value = settings.api_key || '0e257007-8820-4131-ab85-06fb76c02450';
+            document.getElementById('smsDeviceId').value = settings.device_id || '67d9346f04746f387db053f2';
             modal.style.display = 'flex';
         }
     }
