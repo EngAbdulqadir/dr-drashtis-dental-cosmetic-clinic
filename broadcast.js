@@ -5,6 +5,7 @@
 class BroadcastSystem {
     constructor() {
         this.recipients = new Map(); // Unique map by phone number
+        this.selectedRecipients = new Set(); // Set of phone numbers selected via checkbox
         this.isSending = false;
         this.broadcastLog = [];
         this.currentPage = 1;
@@ -40,15 +41,13 @@ class BroadcastSystem {
 
     // Combine all discovery into one unique list
     async refreshDiscovery() {
+        this.selectedRecipients.clear(); // Clear selections on refresh
         const statsEl = document.getElementById('discoveryStats');
         if (statsEl) statsEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing contacts...';
 
         // 1. Fetch from Firestore (via dbAPI)
         try {
             const discovered = await window.dbAPI.discoverRecipients();
-            
-            // Clear all except manual/excel entries? Or just merge?
-            // Let's assume Discovery is the BASE list.
             this.recipients.clear();
             discovered.forEach(r => this.recipients.set(r.phone, r));
         } catch (e) {
@@ -187,15 +186,42 @@ class BroadcastSystem {
             const end = start + this.pageSize;
             const paginatedItems = allRecipients.slice(start, end);
 
-            listDisplay.innerHTML = paginatedItems.map((r, idx) => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #edf2f7; ${idx % 2 === 0 ? 'background: #fff;' : 'background: #f8fafc;'}">
-                    <div>
-                        <div style="font-weight: 600; color: #2d3748;">${r.name}</div>
-                        <div style="font-size: 0.8rem; color: #4a5568;">${r.phone}</div>
+            listDisplay.innerHTML = paginatedItems.map((r, idx) => {
+                const isChecked = this.selectedRecipients.has(r.phone) ? 'checked' : '';
+                return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #edf2f7; ${idx % 2 === 0 ? 'background: #fff;' : 'background: #f7fafc;'} transition: all 0.2s;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" ${isChecked} onchange="window.broadcastSystem.toggleSelectRecipient('${r.phone}', this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
+                        <div>
+                            <div style="font-weight: 600; color: #1a202c; font-size: 0.95rem;">${r.name}</div>
+                            <div style="font-size: 0.85rem; color: #4a5568; letter-spacing: 0.5px;">${r.phone}</div>
+                        </div>
                     </div>
-                    <span style="font-size: 0.7rem; background: #e2e8f0; padding: 2px 8px; border-radius: 10px; color: #4a5568;">${r.source}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.72rem; background: #ebf4ff; padding: 3px 10px; border-radius: 12px; color: #2b6cb0; border: 1px solid #bee3f8; font-weight: 500;">${r.source}</span>
+                        <button onclick="window.broadcastSystem.deleteIndividualRecipient('${r.phone}', '${r.source}')" 
+                                style="background: none; border: none; color: #cbd5e0; cursor: pointer; padding: 5px; font-size: 1.1rem; transition: color 0.2s;"
+                                onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='#cbd5e0'">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
-            `).join('');
+            `;}).join('');
+
+            // Update Delete Selected visibility
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                deleteBtn.style.display = this.selectedRecipients.size > 0 ? 'block' : 'none';
+                deleteBtn.innerHTML = `<i class="fas fa-trash-alt"></i> Delete Selected (${this.selectedRecipients.size})`;
+            }
+            
+            // Sync Select All checkbox
+            const selectAllCheckbox = document.getElementById('selectAllRecipients');
+            if (selectAllCheckbox) {
+                const totalVisible = paginatedItems.length;
+                const totalSelectedInPage = paginatedItems.filter(p => this.selectedRecipients.has(p.phone)).length;
+                selectAllCheckbox.checked = totalVisible > 0 && totalSelectedInPage === totalVisible;
+            }
 
             if (pageIndicator) {
                 const totalPages = Math.ceil(total / this.pageSize) || 1;
@@ -205,13 +231,62 @@ class BroadcastSystem {
     }
 
     changePage(direction) {
-        const totalPages = Math.ceil(this.recipients.size / this.pageSize);
+        const totalPages = Math.ceil(this.recipients.size / this.pageSize) || 1;
         const newPage = this.currentPage + direction;
         
         if (newPage >= 1 && newPage <= totalPages) {
             this.currentPage = newPage;
             this.updateRecipientCountDisplay();
         }
+    }
+
+    toggleSelectRecipient(phone, isChecked) {
+        if (isChecked) {
+            this.selectedRecipients.add(phone);
+        } else {
+            this.selectedRecipients.delete(phone);
+        }
+        this.updateRecipientCountDisplay();
+    }
+
+    toggleSelectAll(isChecked) {
+        if (isChecked) {
+            this.recipients.forEach((_, phone) => this.selectedRecipients.add(phone));
+        } else {
+            this.selectedRecipients.clear();
+        }
+        this.updateRecipientCountDisplay();
+    }
+
+    async deleteIndividualRecipient(phone, source) {
+        if (!confirm(`Are you sure you want to delete ${phone}? This will permanently remove it from marketing list.`)) return;
+        
+        if (source === 'Marketing' || source === 'Manual') {
+            await window.dbAPI.deleteMarketingContact(phone);
+        }
+        
+        // Remove locally too
+        this.recipients.delete(phone);
+        this.selectedRecipients.delete(phone);
+        this.updateRecipientCountDisplay();
+    }
+
+    async deleteSelected() {
+        const count = this.selectedRecipients.size;
+        if (!confirm(`Delete ${count} selected contacts? Marketing contacts will be removed from cloud.`)) return;
+
+        const promises = [];
+        for (const phone of this.selectedRecipients) {
+            const recipient = this.recipients.get(phone);
+            if (recipient && (recipient.source === 'Marketing' || recipient.source === 'Manual')) {
+                promises.push(window.dbAPI.deleteMarketingContact(phone));
+            }
+            this.recipients.delete(phone);
+        }
+        
+        await Promise.all(promises);
+        this.selectedRecipients.clear();
+        this.updateRecipientCountDisplay();
     }
 
     // Send Broadcast with batching
@@ -276,6 +351,10 @@ class BroadcastSystem {
                             message: message
                         })
                     });
+
+                    if (response.status === 401) {
+                        alert('SMS Gateway Authentication Failed (401 Error). Please go to Settings -> Gateway Settings and ensure your API Key is correct.');
+                    }
 
                     let data = {};
                     try {

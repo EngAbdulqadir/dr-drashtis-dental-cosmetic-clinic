@@ -2,6 +2,8 @@ let myChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeDateTimePickers();
+    setupLiveDashboard();
+    registerServiceWorker();
 });
 
 // Initialize date and time pickers
@@ -659,4 +661,44 @@ function showSection(sectionId) {
 
 function printSchedule() {
     window.print();
+}
+
+/**
+ * PWA & LIVE SYNC LOGIC
+ */
+
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('✅ App Service Worker Registered!'))
+                .catch(err => console.log('❌ SW Registration Error:', err));
+        });
+    }
+}
+
+function setupLiveDashboard() {
+    // 1. Listen for "New Feature Push" (Auto-Refresh on Deployment)
+    // We check settings/system document for version changes
+    setTimeout(() => {
+        if (!window.db) return;
+        
+        window.db.collection('settings').doc('system').onSnapshot(doc => {
+            if (doc.exists) {
+                const cloudVersion = doc.data().version;
+                const localVersion = document.querySelector('meta[name="app-build-id"]')?.content;
+                if (localVersion && cloudVersion && cloudVersion !== localVersion) {
+                    console.log(`🔃 New feature detected (${cloudVersion}). Refreshing app...`);
+                    // Small delay to let user finish interactions
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            }
+        });
+
+        // 2. Real-time Patient Appointment Refresh
+        window.db.collection('appointments').onSnapshot(() => {
+            console.log('🔄 Live patient data update detected.');
+            loadAppointments(); // Re-render table and cards
+        });
+    }, 2000); // Small delay to ensure DB is ready
 }

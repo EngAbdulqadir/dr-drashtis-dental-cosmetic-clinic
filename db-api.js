@@ -84,35 +84,21 @@ class DentalDB {
     // Get Booked Time Slots for a specific date
     async getBookedTimeSlots(dateStr) {
         try {
-            const snapshot = await this.db.collection('appointments')
-                .where('appointmentDate', '==', dateStr)
-                .where('status', '!=', 'Cancelled')
-                .get();
-
+            // Fetch all appointments for a safe fallback that doesn't need indexes
+            const snapshot = await this.db.collection('appointments').get();
+                
             const bookedSlots = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.appointmentTime) {
+                // Filter manually for date and non-cancelled status
+                if (data.appointmentDate === dateStr && data.status !== 'Cancelled' && data.appointmentTime) {
                     bookedSlots.push(data.appointmentTime);
                 }
             });
             return bookedSlots;
         } catch (error) {
             console.error('Firestore Error (getBookedTimeSlots):', error);
-            // Fallback: get all and filter locally if compound query index is missing
-            try {
-                const snapshot = await this.db.collection('appointments').get();
-                const bookedSlots = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.appointmentDate === dateStr && data.status !== 'Cancelled' && data.appointmentTime) {
-                        bookedSlots.push(data.appointmentTime);
-                    }
-                });
-                return bookedSlots;
-            } catch (fallbackError) {
-                return [];
-            }
+            return [];
         }
     }
 
@@ -159,6 +145,24 @@ class DentalDB {
             return true;
         } catch (error) {
             console.error('Firestore Error (saveGatewaySettings):', error);
+            return false;
+        }
+    }
+
+    // NEW: Delete individual marketing contact
+    async deleteMarketingContact(phone) {
+        try {
+            // Find document with this phone
+            const snap = await this.db.collection('marketing_contacts')
+                .where('phone', '==', phone)
+                .get();
+            
+            const promises = [];
+            snap.forEach(doc => promises.push(doc.ref.delete()));
+            await Promise.all(promises);
+            return true;
+        } catch (error) {
+            console.error('Firestore Error (deleteMarketingContact):', error);
             return false;
         }
     }
