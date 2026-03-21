@@ -239,6 +239,7 @@ class DentalDB {
             // 3. Fetch from Marketing Contacts (Manually added & persisted)
             try {
                 const marketingSnap = await this.db.collection('marketing_contacts').get();
+                console.log(`Found ${marketingSnap.size} persistent marketing contacts.`);
                 marketingSnap.forEach(doc => {
                     const data = doc.data();
                     const phone = window.phoneUtils.normalizePhone(data.phone);
@@ -250,7 +251,9 @@ class DentalDB {
                         });
                     }
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.error('Marketing contacts collection error. Ensure Firestore rules allow reading "marketing_contacts" collection.', e);
+            }
 
             return Array.from(recipients.values());
         } catch (error) {

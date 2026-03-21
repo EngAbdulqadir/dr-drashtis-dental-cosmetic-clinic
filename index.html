@@ -261,7 +261,8 @@
                                 <div class="manual-input-row">
                                     <div style="display: flex; gap: 8px; align-items: stretch;">
                                         <div style="background: #e2e8f0; border: 2px solid #cbd5e0; border-radius: 4px; padding: 0 12px; display: flex; align-items: center; font-weight: bold; color: #333;">+91</div>
-                                        <input type="text" id="manualPhoneInput" placeholder="10-digit Mobile" maxlength="10" inputmode="numeric" 
+                                        <input type="number" id="manualPhoneInput" placeholder="10-digit Mobile" 
+                                               oninput="if(this.value.length > 10) this.value = this.value.slice(0, 10);"
                                                style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 4px; font-weight: 500; font-family: inherit;">
                                     </div>
                                     <span id="manualPhoneError" style="color: #e53e3e; font-size: 0.75rem; display: none; margin-top: 4px;">* Enter valid 10-digit number</span>

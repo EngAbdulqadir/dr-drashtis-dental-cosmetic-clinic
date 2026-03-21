@@ -99,15 +99,24 @@ class BroadcastSystem {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // PERSIST to Firestore
-            window.dbAPI.saveMarketingContact(contactData).then(() => {
-                this.refreshDiscovery(); // Reload entire list to include the new persistent contact
+            // 1. ADD LOCALLY for zero-latency UI update
+            this.recipients.set(normalized, contactData);
+            this.updateRecipientCountDisplay();
+
+            // 2. PERSIST to Firestore for long-term storage
+            window.dbAPI.saveMarketingContact(contactData).then((success) => {
+                if (!success) {
+                    alert('Warning: Could not save to cloud. Please check your Firestore rules/connection.');
+                }
+                this.refreshDiscovery(); // Sync with cloud state
                 input.value = '';
                 nameInput.value = '';
                 
                 // Show inline success
                 successMsg.style.display = 'block';
                 setTimeout(() => { successMsg.style.display = 'none'; }, 3000);
+            }).catch(e => {
+                console.error('Persistence Failure:', e);
             });
         } else {
             phoneError.style.display = 'block';
