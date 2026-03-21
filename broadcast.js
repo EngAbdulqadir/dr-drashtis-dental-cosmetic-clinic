@@ -7,6 +7,8 @@ class BroadcastSystem {
         this.recipients = new Map(); // Unique map by phone number
         this.isSending = false;
         this.broadcastLog = [];
+        this.currentPage = 1;
+        this.pageSize = 10;
         this.bindEvents();
     }
 
@@ -61,28 +63,54 @@ class BroadcastSystem {
     addManualNumber() {
         const input = document.getElementById('manualPhoneInput');
         const nameInput = document.getElementById('manualNameInput');
-        let raw = input.value.trim();
+        const phoneError = document.getElementById('manualPhoneError');
+        const nameError = document.getElementById('manualNameError');
+        const successMsg = document.getElementById('manualSuccessMsg');
         
-        // If it starts with 0 or doesn't have 91 prefix and is 10 digits
-        if (/^[6-9]\d{9}$/.test(raw)) {
-            raw = '+91' + raw;
-        } else if (raw.startsWith('0') && raw.length === 11) {
-            raw = '+91' + raw.substring(1);
+        let raw = input.value.trim();
+        let name = nameInput.value.trim();
+        let hasError = false;
+
+        // Reset errors
+        phoneError.style.display = 'none';
+        nameError.style.display = 'none';
+        successMsg.style.display = 'none';
+
+        if (!name) {
+            nameError.style.display = 'block';
+            hasError = true;
         }
 
-        const normalized = window.phoneUtils.normalizePhone(raw);
+        // Must be exactly 10 digits for India
+        if (!/^\d{10}$/.test(raw)) {
+            phoneError.style.display = 'block';
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        // Normalize
+        const normalized = window.phoneUtils.normalizePhone('+91' + raw);
         if (normalized) {
-            this.recipients.set(normalized, {
+            const contactData = {
                 phone: normalized,
-                name: nameInput.value.trim() || 'Guest',
-                source: 'Manual'
+                name: name,
+                source: 'Manual',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // PERSIST to Firestore
+            window.dbAPI.saveMarketingContact(contactData).then(() => {
+                this.refreshDiscovery(); // Reload entire list to include the new persistent contact
+                input.value = '';
+                nameInput.value = '';
+                
+                // Show inline success
+                successMsg.style.display = 'block';
+                setTimeout(() => { successMsg.style.display = 'none'; }, 3000);
             });
-            input.value = '';
-            nameInput.value = '';
-            this.updateRecipientCountDisplay();
-            alert(`Added: ${normalized}`);
         } else {
-            alert('Invalid phone number format.');
+            phoneError.style.display = 'block';
         }
     }
 
@@ -131,17 +159,49 @@ class BroadcastSystem {
     updateRecipientCountDisplay() {
         const countDisplay = document.getElementById('totalRecipientCount');
         const listDisplay = document.getElementById('recipientListPreview');
+        const pageIndicator = document.getElementById('pageIndicator');
         
-        if (countDisplay) countDisplay.innerText = this.recipients.size;
+        const allRecipients = Array.from(this.recipients.values()).sort((a, b) => {
+            return (a.name || '').localeCompare(b.name || '');
+        });
+        const total = allRecipients.length;
+        
+        if (countDisplay) countDisplay.innerText = total;
         
         if (listDisplay) {
-            listDisplay.innerHTML = Array.from(this.recipients.values())
-                .slice(0, 10)
-                .map(r => `<div><strong>${r.name}:</strong> ${r.phone} <small>(${r.source})</small></div>`)
-                .join('');
-            if (this.recipients.size > 10) {
-                listDisplay.innerHTML += `<div>...and ${this.recipients.size - 10} more.</div>`;
+            if (total === 0) {
+                listDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #718096;">No recipients discovered yet. Add manually or upload Excel.</div>';
+                return;
             }
+
+            const start = (this.currentPage - 1) * this.pageSize;
+            const end = start + this.pageSize;
+            const paginatedItems = allRecipients.slice(start, end);
+
+            listDisplay.innerHTML = paginatedItems.map((r, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #edf2f7; ${idx % 2 === 0 ? 'background: #fff;' : 'background: #f8fafc;'}">
+                    <div>
+                        <div style="font-weight: 600; color: #2d3748;">${r.name}</div>
+                        <div style="font-size: 0.8rem; color: #4a5568;">${r.phone}</div>
+                    </div>
+                    <span style="font-size: 0.7rem; background: #e2e8f0; padding: 2px 8px; border-radius: 10px; color: #4a5568;">${r.source}</span>
+                </div>
+            `).join('');
+
+            if (pageIndicator) {
+                const totalPages = Math.ceil(total / this.pageSize) || 1;
+                pageIndicator.innerText = `Page ${this.currentPage} of ${totalPages}`;
+            }
+        }
+    }
+
+    changePage(direction) {
+        const totalPages = Math.ceil(this.recipients.size / this.pageSize);
+        const newPage = this.currentPage + direction;
+        
+        if (newPage >= 1 && newPage <= totalPages) {
+            this.currentPage = newPage;
+            this.updateRecipientCountDisplay();
         }
     }
 
@@ -191,21 +251,29 @@ class BroadcastSystem {
                 progressEl.innerHTML = `Sending batch ${currentBatchNumber}... (${i}/${total})`;
                 
                 try {
-                    // Textbee Bulk SMS API Call
-                    const response = await fetch('https://api.textbee.dev/api/v1/gateway/send-bulk-sms', {
+                    // UPDATED ENDPOINT based on Textbee API Documentation
+                    // Format: https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/send-sms
+                    const endpoint = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
+                    
+                    const response = await fetch(endpoint, {
                         method: 'POST',
+                        mode: 'cors',
                         headers: {
                             'Content-Type': 'application/json',
                             'x-api-key': apiKey
                         },
                         body: JSON.stringify({
-                            deviceId: deviceId,
-                            to: batch,
+                            recipients: batch, // Textbee uses 'recipients' array
                             message: message
                         })
                     });
 
-                    const data = await response.json();
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        data = { message: 'Non-JSON response' };
+                    }
                     results.push({
                         batch: currentBatchNumber,
                         success: response.ok,
@@ -255,40 +323,69 @@ class BroadcastSystem {
         }
     }
 
+    // Modified to use real-time listeners for "Live Dashboard" experience
     async loadHistory() {
         const historyList = document.getElementById('broadcastHistoryList');
         if (!historyList) return;
 
-        historyList.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-circle-notch fa-spin"></i> Loading history...</div>';
-        
-        try {
-            const history = await window.dbAPI.getBroadcastHistory();
-
-            if (!history || history.length === 0) {
-                historyList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No broadcast records found.</div>';
-                return;
-            }
-
-            historyList.innerHTML = history.map(item => `
-                <div class="history-item">
-                    <div class="history-header">
-                        <div>
-                            <strong>${item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString() : 'Just now'}</strong>
-                            <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">"${item.message.substring(0, 60)}${item.message.length > 60 ? '...' : ''}"</div>
-                        </div>
-                        <span class="badge">${item.recipientsCount} recipients</span>
-                    </div>
-                    <div class="history-body">
-                        <div class="history-status">
-                            ${Array.isArray(item.status) ? item.status.join(' | ') : 'Sent'}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (err) {
-            console.error('History Load Error:', err);
-            historyList.innerHTML = '<div style="color: red; text-align: center;">Failed to load history trace.</div>';
+        // Unsubscribe from previous listener if exists
+        if (this.historyUnsubscribe) {
+            this.historyUnsubscribe();
         }
+
+        historyList.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-circle-notch fa-spin"></i> Loading live reports...</div>';
+        
+        // Use dbAPI to get the collection and listen for changes
+        try {
+            this.historyUnsubscribe = window.db.collection('sms_broadcasts')
+                .limit(20)
+                .onSnapshot(snapshot => {
+                    const history = [];
+                    snapshot.forEach(doc => {
+                        history.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Client-side sort
+                    history.sort((a, b) => {
+                        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                        return dateB - dateA;
+                    });
+
+                    if (history.length === 0) {
+                        historyList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No broadcast records found.</div>';
+                        return;
+                    }
+
+                    historyList.innerHTML = history.map(item => `
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div>
+                                    <strong>${item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString() : 'Just now'}</strong>
+                                    <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">"${item.message.substring(0, 60)}${item.message.length > 60 ? '...' : ''}"</div>
+                                </div>
+                                <span class="badge" style="background: ${this.getStatusColor(item)}">${item.recipientsCount} recipients</span>
+                            </div>
+                            <div class="history-body">
+                                <div class="history-status">
+                                    ${Array.isArray(item.status) ? item.status.map(s => `<span>${s}</span>`).join(' | ') : 'Sent'}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                });
+        } catch (err) {
+            console.error('Snapshot Error:', err);
+            historyList.innerHTML = '<div style="color: red; text-align: center;">Failed to connect to live stream.</div>';
+        }
+    }
+
+    getStatusColor(item) {
+        if (!item.status) return 'var(--secondary-color)';
+        const statusStr = Array.isArray(item.status) ? item.status.join('') : item.status;
+        if (statusStr.includes('Failure') || statusStr.includes('Error')) return '#e53e3e';
+        if (statusStr.includes('Success')) return '#38a169';
+        return 'var(--secondary-color)';
     }
 
     // SMS Gateway Settings

@@ -1,0 +1,13 @@
+{
+  "name": "dr-drashtis-dental-clinic",
+  "version": "1.1.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'Standard Build Process'"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.13",
+    "firebase-admin": "^12.1.0"
+  }
+}

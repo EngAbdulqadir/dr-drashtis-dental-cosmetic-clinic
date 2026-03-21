@@ -5,6 +5,8 @@ class DentalDB {
     constructor() {
         console.log('✅ Connecting to Firebase Firestore...');
         this.db = firebase.firestore();
+        window.db = this.db; // Expose globally for live listeners
+        this.auth = firebase.auth();
     }
 
     // Get all appointments
@@ -232,14 +234,39 @@ class DentalDB {
                         });
                     }
                 });
-            } catch (e) {
-                // Users collection likely doesn't exist yet, it's fine
-            }
+            } catch (e) {}
+
+            // 3. Fetch from Marketing Contacts (Manually added & persisted)
+            try {
+                const marketingSnap = await this.db.collection('marketing_contacts').get();
+                marketingSnap.forEach(doc => {
+                    const data = doc.data();
+                    const phone = window.phoneUtils.normalizePhone(data.phone);
+                    if (phone && !recipients.has(phone)) {
+                        recipients.set(phone, {
+                            phone,
+                            name: data.name || 'Contact',
+                            source: 'Marketing'
+                        });
+                    }
+                });
+            } catch (e) {}
 
             return Array.from(recipients.values());
         } catch (error) {
             console.error('Firestore Error (discoverRecipients):', error);
             return [];
+        }
+    }
+
+    // Persist a single manual contact
+    async saveMarketingContact(contact) {
+        try {
+            await this.db.collection('marketing_contacts').doc(contact.phone).set(contact, { merge: true });
+            return true;
+        } catch (error) {
+            console.error('Firestore Error (saveMarketingContact):', error);
+            return false;
         }
     }
 }

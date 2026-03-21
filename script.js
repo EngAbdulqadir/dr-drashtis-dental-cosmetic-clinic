@@ -144,6 +144,7 @@ form.addEventListener('submit', async (e) => {
     const name = document.getElementById('name').value;
     const place = document.getElementById('place').value;
     const mobile = document.getElementById('mobile').value;
+    const email = document.getElementById('email').value;
     const appointmentDate = document.getElementById('appointmentDate').value;
     const appointmentTime = document.getElementById('appointmentTime').value;
     const reason = document.getElementById('reason').value;
@@ -165,6 +166,7 @@ form.addEventListener('submit', async (e) => {
         name,
         place,
         mobile,
+        email,
         reason,
         fee: 0,
         status: 'Pending'
@@ -218,8 +220,24 @@ window.onclick = function (event) {
 
 async function saveAppointment(appointment) {
     try {
-        await window.dbAPI.createAppointment(appointment);
+        const docId = await window.dbAPI.createAppointment(appointment);
         await loadAppointments();
+        
+        // Trigger automated notifications (Email/SMS)
+        fetch('/api/booking-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                appointmentId: docId,
+                patientName: appointment.name,
+                patientEmail: appointment.email,
+                patientPhone: appointment.mobile,
+                date: appointment.appointmentDate,
+                time: appointment.appointmentTime,
+                status: 'Confirmed'
+            })
+        }).catch(e => console.error('Notification Trigger Failed:', e));
+
         return true;
     } catch (error) {
         console.error('Error saving appointment:', error);
@@ -553,24 +571,25 @@ if (settingsForm) {
 async function loadClinicSettings() {
     try {
         let settings = {};
-        // Try to fetch from Supabase if connected
         if (window.dbAPI) {
             const data = await window.dbAPI.getSettings();
-            // If data comes from DB (snake_case), map it
-            if (data && data.clinic_name) {
+            if (data) {
                 settings = {
-                    name: data.clinic_name,
+                    name: data.clinic_name || data.name,
                     subtitle: data.subtitle,
-                    primaryColor: data.primary_color,
-                    secondaryColor: data.secondary_color,
-                    adminUser: data.admin_user,
-                    adminPass: data.admin_pass
+                    primaryColor: data.primary_color || data.primaryColor,
+                    secondaryColor: data.secondary_color || data.secondaryColor,
+                    adminEmail: data.adminEmail || data.admin_email
                 };
-                // Cache locally
+                
+                // Populate Settings Form
+                if (document.getElementById('settingClinicName')) {
+                    document.getElementById('settingClinicName').value = settings.name || '';
+                    document.getElementById('settingSubtitle').value = settings.subtitle || '';
+                    document.getElementById('settingAdminEmail').value = settings.adminEmail || '';
+                }
+                
                 localStorage.setItem('clinicSettings', JSON.stringify(settings));
-            } else if (data && data.name) {
-                // From local storage fallback
-                settings = data;
             }
         } else {
             settings = JSON.parse(localStorage.getItem('clinicSettings'));
@@ -581,6 +600,30 @@ async function loadClinicSettings() {
         console.error("Error loading settings:", e);
     }
 }
+
+window.saveClinicSettings = async function(event) {
+    event.preventDefault();
+    const btn = event.target.querySelector('button');
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+
+    const settings = {
+        clinic_name: document.getElementById('settingClinicName').value,
+        subtitle: document.getElementById('settingSubtitle').value,
+        adminEmail: document.getElementById('settingAdminEmail').value
+    };
+
+    try {
+        await window.dbAPI.saveSettings(settings);
+        alert('Settings saved successfully!');
+        loadClinicSettings(); // Re-apply
+    } catch (e) {
+        alert('Failed to save settings.');
+    } finally {
+        btn.innerText = 'Save Settings';
+        btn.disabled = false;
+    }
+};
 
 function applySettings(settings) {
     if (settings.name) {

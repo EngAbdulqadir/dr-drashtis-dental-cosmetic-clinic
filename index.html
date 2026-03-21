@@ -72,6 +72,10 @@
                             maxlength="10" title="Please enter a valid 10-digit Indian mobile number starting with 6-9">
                     </div>
                     <div class="form-group">
+                        <label for="email">Email Address (for notifications)</label>
+                        <input type="email" id="email" placeholder="e.g. patel@example.com">
+                    </div>
+                    <div class="form-group">
                         <label for="appointmentDate">Appointment Date *</label>
                         <input type="date" id="appointmentDate" required title="Please select an appointment date">
                     </div>
@@ -108,10 +112,13 @@
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <nav class="dashboard-nav">
                         <button onclick="window.broadcastSystem.showTab('recordsSection')" class="tab-btn active" data-tab="recordsSection">
-                            <i class="fas fa-list-ul"></i> Patient Records
+                            <i class="fas fa-list-ul"></i> Patients
                         </button>
                         <button onclick="window.broadcastSystem.showTab('broadcastSection')" class="tab-btn" data-tab="broadcastSection">
-                            <i class="fas fa-bullhorn"></i> SMS Broadcast
+                            <i class="fas fa-bullhorn"></i> Broadcast
+                        </button>
+                        <button onclick="window.broadcastSystem.showTab('settingsSection')" class="tab-btn" data-tab="settingsSection">
+                            <i class="fas fa-cog"></i> Settings
                         </button>
                     </nav>
                     <button onclick="showSection('home')" class="btn-primary" style="background-color: #666;">Back to Home</button>
@@ -230,23 +237,40 @@
 
                         <div style="margin-top: 1rem;">
                             <h4>Recipient List Preview</h4>
-                            <div id="recipientListPreview" style="max-height: 200px; overflow-y: auto; background: #f0f4f8; padding: 15px; border-radius: 8px; font-size: 0.9rem; border: 1px dashed #cbd5e0;">
-                                No recipients identified yet. Please add manually or upload Excel.
+                            <div id="recipientListPreview" style="max-height: 480px; overflow-y: auto; background: #fff; border-radius: 8px; font-size: 0.95rem; border: 1px solid #e2e8f0;">
+                                <!-- Paginated list here -->
+                            </div>
+                            <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; background: #f8fafc; padding: 8px; border-radius: 8px;">
+                                <button onclick="window.broadcastSystem.changePage(-1)" class="btn-small" style="background: var(--primary-color);">Previous</button>
+                                <span id="pageIndicator" style="font-weight: 600; font-size: 0.85rem;">Page 1</span>
+                                <button onclick="window.broadcastSystem.changePage(1)" class="btn-small" style="background: var(--primary-color);">Next</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Sidebar: External Sources -->
                     <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <div class="dashboard-card">
-                            <h3>2. Manual Add (+91)</h3>
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                <input type="text" id="manualNameInput" placeholder="Patient/Contact Name">
-                                <div style="display: flex; gap: 5px;">
-                                    <input type="text" value="+91" disabled style="width: 50px; text-align: center; background: #eee; font-weight: bold;">
-                                    <input type="tel" id="manualPhoneInput" placeholder="10-digit Mobile" style="flex: 1;">
+                        <div class="dashboard-card" style="border-radius: 12px; padding: 25px;">
+                            <h3 style="color: #006b5d; font-size: 1.4rem; margin-bottom: 20px;">2. Manual Add (+91)</h3>
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div class="manual-input-row" style="margin-bottom: 5px;">
+                                    <input type="text" id="manualNameInput" placeholder="Patient/Contact Name" 
+                                           style="width: 100%; padding: 10px; border: 1px solid #777; border-radius: 4px; font-family: inherit;">
+                                    <span id="manualNameError" style="color: #e53e3e; font-size: 0.75rem; display: none; margin-top: 4px;">* Name is required</span>
                                 </div>
-                                <button onclick="window.broadcastSystem.addManualNumber()" class="btn-primary" style="background-color: var(--secondary-color); width: 100%;">Add to List</button>
+                                <div class="manual-input-row">
+                                    <div style="display: flex; gap: 8px; align-items: stretch;">
+                                        <div style="background: #e2e8f0; border: 2px solid #cbd5e0; border-radius: 4px; padding: 0 12px; display: flex; align-items: center; font-weight: bold; color: #333;">+91</div>
+                                        <input type="text" id="manualPhoneInput" placeholder="10-digit Mobile" maxlength="10" inputmode="numeric" 
+                                               style="flex: 1; padding: 10px; border: 2px solid #000; border-radius: 4px; font-weight: 500; font-family: inherit;">
+                                    </div>
+                                    <span id="manualPhoneError" style="color: #e53e3e; font-size: 0.75rem; display: none; margin-top: 4px;">* Enter valid 10-digit number</span>
+                                </div>
+                                <button onclick="window.broadcastSystem.addManualNumber()" 
+                                        style="background: #4299e1; color: white; border: none; border-radius: 30px; padding: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 5px;">
+                                    Add to List
+                                </button>
+                                <div id="manualSuccessMsg" style="color: #2f855a; font-size: 0.85rem; text-align: center; display: none;">Contact saved successfully!</div>
                             </div>
                         </div>
 
@@ -274,6 +298,30 @@
                     <h3><i class="fas fa-history"></i> Broadcast History Audit Trail</h3>
                     <div id="broadcastHistoryList" style="max-height: 400px; overflow-y: auto; margin-top: 15px;">
                         Fetching broadcast records...
+                    </div>
+                </div>
+            <!-- Clinic Settings Section -->
+            <div id="settingsSection" class="dashboard-tab" style="display: none;">
+                <div class="dashboard-grid">
+                    <div class="dashboard-card" style="grid-column: span 2;">
+                        <h3>Clinic Branding & Notifications</h3>
+                        <form id="clinicSettingsForm" onsubmit="window.saveClinicSettings(event)" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Clinic Name</label>
+                                <input type="text" id="settingClinicName" placeholder="Dr. Drashti's Clinic" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Subtitle / Motto</label>
+                                <input type="text" id="settingSubtitle" placeholder="Advanced Dental Care">
+                            </div>
+                            <div class="form-group">
+                                <label>Administrator Email (for booking alerts)</label>
+                                <input type="email" id="settingAdminEmail" placeholder="admin@example.com" required>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <button type="submit" class="btn-primary" style="width: 200px;">Save Settings</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
