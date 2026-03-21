@@ -128,14 +128,81 @@ class DentalDB {
         }
     }
 
-    // Save White Label Settings
-    async saveSettings(settingsData) {
+    // Save SMS Broadcast Report
+    async saveBroadcastReport(report) {
         try {
-            await this.db.collection('settings').doc('clinic').set(settingsData, { merge: true });
-            return true;
+            const docRef = await this.db.collection('sms_broadcasts').add({
+                ...report,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return docRef.id;
         } catch (error) {
-            console.error('Firestore Error (saveSettings):', error);
-            return false;
+            console.error('Firestore Error (saveBroadcastReport):', error);
+            return null;
+        }
+    }
+
+    // Get SMS Broadcast History
+    async getBroadcastHistory() {
+        try {
+            const snapshot = await this.db.collection('sms_broadcasts')
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+            const history = [];
+            snapshot.forEach(doc => {
+                history.push({ id: doc.id, ...doc.data() });
+            });
+            return history;
+        } catch (error) {
+            console.error('Firestore Error (getBroadcastHistory):', error);
+            // Fallback for missing index or collection
+            return [];
+        }
+    }
+
+    // Discover Recipients from Firestore
+    async discoverRecipients() {
+        try {
+            const recipients = new Map(); // Use Map to keep unique by phone
+
+            // 1. Fetch from Appointments
+            const appSnapshot = await this.db.collection('appointments').get();
+            appSnapshot.forEach(doc => {
+                const data = doc.data();
+                const phone = window.phoneUtils.normalizePhone(data.mobile);
+                if (phone && !recipients.has(phone)) {
+                    recipients.set(phone, {
+                        phone,
+                        name: data.name || 'Patient',
+                        source: 'Appointments'
+                    });
+                }
+            });
+
+            // 2. Fetch from Users (if it exists)
+            try {
+                const userSnapshot = await this.db.collection('users').get();
+                userSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const rawPhone = data.mobile || data.phoneNumber;
+                    const phone = window.phoneUtils.normalizePhone(rawPhone);
+                    if (phone && !recipients.has(phone)) {
+                        recipients.set(phone, {
+                            phone,
+                            name: data.name || data.displayName || 'User',
+                            source: 'Users'
+                        });
+                    }
+                });
+            } catch (e) {
+                // Users collection likely doesn't exist yet, it's fine
+            }
+
+            return Array.from(recipients.values());
+        } catch (error) {
+            console.error('Firestore Error (discoverRecipients):', error);
+            return [];
         }
     }
 }

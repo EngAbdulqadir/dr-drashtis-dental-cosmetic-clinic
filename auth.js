@@ -136,6 +136,7 @@ function toggleDashboard() {
     if (dashboard.style.display === 'none' || dashboard.style.display === '') {
         dashboard.style.display = 'block';
         mainContent.style.display = 'none';
+        if (window.broadcastSystem) window.broadcastSystem.showTab('recordsSection');
         if (typeof loadAppointments === 'function') {
             loadAppointments();
         }

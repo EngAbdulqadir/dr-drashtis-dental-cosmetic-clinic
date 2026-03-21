@@ -804,3 +804,122 @@ footer {
         display: none;
     }
 }
+
+/* --- Bulk SMS Broadcast Styles --- */
+.dashboard-nav {
+    display: flex;
+    gap: 10px;
+    margin-right: 20px;
+}
+
+.tab-btn {
+    background: #f0f4f8;
+    border: 1px solid #d1d9e6;
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #555;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn i {
+    font-size: 0.9rem;
+}
+
+.tab-btn:hover {
+    background: #e2e8f0;
+}
+
+.tab-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(38, 166, 154, 0.2);
+}
+
+.discovery-stats {
+    background: #e0f2f1;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+
+.excel-upload-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #217346; /* Excel Green */
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    text-align: center;
+    width: 100%;
+}
+
+.excel-upload-btn:hover {
+    background: #1a5c38;
+}
+
+.history-item {
+    background: #fff;
+    border: 1px solid #eee;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.badge {
+    background: var(--secondary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.history-status {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 5px;
+    font-family: monospace;
+}
+
+@media (max-width: 767px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 15px;
+    }
+
+    .dashboard-nav {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+
+    .tab-btn {
+        white-space: nowrap;
+    }
+}
